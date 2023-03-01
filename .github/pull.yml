@@ -1,0 +1,6 @@
+version: "1"
+rules:
+  - base: trunk
+    upstream: artichoke:trunk
+    mergeMethod: merge
+    mergeUnstable: true
