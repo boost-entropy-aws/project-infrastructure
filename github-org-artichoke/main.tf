@@ -25,6 +25,33 @@ data "terraform_remote_state" "aws" {
   }
 }
 
+resource "github_organization_settings" "this" {
+  billing_email                                                = "github-billing@artichokeruby.org"
+  blog                                                         = "https://www.artichokeruby.org"
+  email                                                        = "github@artichokeruby.org"
+  twitter_username                                             = "artichokeruby"
+  name                                                         = "Artichoke Ruby"
+  description                                                  = "Artichoke is a Ruby made with Rust"
+  has_organization_projects                                    = false
+  has_repository_projects                                      = false
+  default_repository_permission                                = "read"
+  members_can_create_repositories                              = true
+  members_can_create_public_repositories                       = true
+  members_can_create_private_repositories                      = true
+  members_can_create_internal_repositories                     = false
+  members_can_create_pages                                     = true
+  members_can_create_public_pages                              = true
+  members_can_create_private_pages                             = true
+  members_can_fork_private_repositories                        = false
+  web_commit_signoff_required                                  = false
+  advanced_security_enabled_for_new_repositories               = false
+  dependabot_alerts_enabled_for_new_repositories               = true
+  dependabot_security_updates_enabled_for_new_repositories     = true
+  dependency_graph_enabled_for_new_repositories                = true
+  secret_scanning_enabled_for_new_repositories                 = true
+  secret_scanning_push_protection_enabled_for_new_repositories = true
+}
+
 module "git_events_webhook" {
   source = "../modules/github-discord-webhook"
 
@@ -79,50 +106,92 @@ module "org_members" {
   members = toset([
     "artichoke-ci",
     "b-n",
+    "choznerol",
   ])
 }
 
 module "team_ci" {
-  source = "../modules/github-team-ci"
+  source = "../modules/github-team"
 
   name        = "ci"
   description = "Builds"
+
+  maintainers = toset([
+    "lopopolo",
+  ])
+
+  members = toset([
+    "artichoke-ci",
+  ])
 }
 
 module "team_contributors" {
-  source = "../modules/github-team-contributors"
+  source = "../modules/github-team"
 
   name        = "contributors"
   description = "Code contributors"
+
+  maintainers = toset([
+    "lopopolo",
+  ])
+
+  members = toset([
+    "b-n",
+    "choznerol",
+  ])
 }
 
 module "team_cratesio_publishers" {
-  source = "../modules/github-team-crates.io-publishers"
+  source = "../modules/github-team"
 
   name        = "crates.io publishers"
   description = "Core team with perissions for publishing packages to crates.io"
+
+  maintainers = toset([
+    "lopopolo",
+  ])
+
+  members = toset([])
 }
 
 resource "github_team_repository" "contributor_repos" {
   for_each = toset([
     "artichoke",
+    "artichoke.github.io",
     "boba",
     "cactusref",
     "clang-format",
+    "docker-artichoke-nightly",
     "focaccia",
+    "generate_third_party",
     "intaglio",
     "jasper",
+    "known-folders-rs",
+    "logo",
+    "mruby",
     "mspec",
+    "nightly",
+    "Onigmo",
+    "oniguruma",
     "playground",
+    "posix-space",
+    "project-infrastructure",
+    "python-github-backup",
     "qed",
     "rand_mt",
     "raw-parts",
     "roe",
     "ruby",
     "ruby-file-expand-path",
+    "rubyconf",
+    "rust-onig",
+    "setup-rust",
     "spec",
+    "spec-state",
     "strftime-ruby",
     "strudel",
+    "sysdir-rs",
+    "www.artichokeruby.org",
   ])
 
   team_id    = module.team_contributors.team_id
