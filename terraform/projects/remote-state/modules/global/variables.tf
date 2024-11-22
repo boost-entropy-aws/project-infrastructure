@@ -1,10 +1,10 @@
 variable "phase" {
-  description = "Provisioning phase, either `per-host`, `per-cluster` or `global`"
+  description = "Provisioning phase, either `per-host`, `per-cluster`, `per-domain`, or `global`"
   type        = string
 
   validation {
-    condition     = var.phase == "per-host" || var.phase == "per-cluster" || var.phase == "global"
-    error_message = "The phase variable must be either 'per-host', 'per-cluster', or 'global'."
+    condition     = var.phase == "per-host" || var.phase == "per-cluster" || var.phase == "per-domain" || var.phase == "global"
+    error_message = "The phase variable must be either 'per-host', 'per-cluster', 'per-domain', or 'global'."
   }
 }
 
