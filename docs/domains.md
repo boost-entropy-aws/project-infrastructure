@@ -43,6 +43,7 @@
 [www.artichokeruby.run]: https://www.artichokeruby.run/
 
 [^2]: Property sets [HTTP Strict Transport Security][hsts-explainer] headers.
+
 [^3]:
     The playground snapshot at <https://rubyconf2019.artichoke.run> is used by
     RubyConf 2019 presentation at <https://artichoke.github.io/rubyconf/2019/>,
