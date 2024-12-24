@@ -79,20 +79,20 @@ available tasks by running:
 
 ```console
 $ bundle exec rake --tasks
-rake bundle:audit:check           # Checks the Gemfile.lock for insecure dependencies
-rake bundle:audit:update          # Updates the bundler-audit vulnerability database
-rake fmt                          # Format sources
-rake fmt:terraform                # Format Terraform sources with terraform fmt
-rake fmt:text                     # Format text, YAML, and Markdown sources with prettier
-rake format                       # Format sources
-rake format:terraform             # Format Terraform sources with terraform fmt
-rake format:text                  # Format text, YAML, and Markdown sources with prettier
-rake lint                         # Lint sources
-rake lint:rubocop                 # Run RuboCop
-rake lint:rubocop:autocorrect     # Auto-correct RuboCop offenses
-rake lint:terraform               # Lint Terraform sources
-rake release:markdown_link_check  # Check for broken links in markdown files
-rake terraform:providers:lock     # Lock terraform providers on all plaforms in all environments
+rake bundle:audit:check            # Checks the Gemfile.lock for insecure dependencies
+rake bundle:audit:update           # Updates the bundler-audit vulnerability database
+rake fmt                           # Format sources
+rake fmt:terraform                 # Format Terraform sources with terraform fmt
+rake fmt:text                      # Format text, YAML, and Markdown sources with prettier
+rake format                        # Format sources
+rake format:terraform              # Format Terraform sources with terraform fmt
+rake format:text                   # Format text, YAML, and Markdown sources with prettier
+rake lint                          # Lint sources
+rake lint:rubocop                  # Run RuboCop
+rake lint:rubocop:autocorrect      # Autocorrect RuboCop offenses (only when it's safe)
+rake lint:rubocop:autocorrect_all  # Autocorrect RuboCop offenses (safe and unsafe)
+rake lint:terraform                # Lint Terraform sources
+rake terraform:providers:lock      # Lock terraform providers on all plaforms in all environments
 ```
 
 To lint Ruby sources, project-infrastructure uses [RuboCop]. RuboCop runs as
