@@ -1,10 +1,10 @@
 terraform {
   backend "s3" {
-    bucket         = "artichoke-forge-project-infrastructure-terraform-state"
-    region         = "us-west-2"
-    key            = "aws/terraform.tfstate"
-    encrypt        = true
-    dynamodb_table = "terraform_statelock"
+    bucket       = "artichoke-forge-project-infrastructure-terraform-state"
+    region       = "us-west-2"
+    key          = "aws/terraform.tfstate"
+    encrypt      = true
+    use_lockfile = true
   }
 }
 
@@ -72,6 +72,7 @@ module "code_coverage" {
   access_logs_bucket = module.forge_access_logs.name
 
   domains = ["codecov.artichokeruby.org"]
+  zone_id = data.aws_route53_zone.artichokeruby_org.zone_id
 
   providers = {
     aws           = aws

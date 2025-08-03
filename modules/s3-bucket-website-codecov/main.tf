@@ -1,3 +1,7 @@
+locals {
+  safe_name = replace(var.domains[0], ".", "-")
+}
+
 resource "aws_s3_bucket" "this" {
   bucket = var.bucket
 
@@ -21,6 +25,9 @@ resource "aws_s3_bucket_lifecycle_configuration" "this" {
   rule {
     id     = "archive"
     status = "Enabled"
+
+    # match every object in the bucket
+    filter {}
 
     noncurrent_version_transition {
       noncurrent_days = 30
@@ -91,16 +98,51 @@ resource "aws_acm_certificate" "cert" {
 
   domain_name               = var.domains[0]
   subject_alternative_names = slice(var.domains, 1, length(var.domains))
-  validation_method         = "EMAIL"
-
-  validation_option {
-    domain_name       = var.domains[0]
-    validation_domain = "artichokeruby.org"
-  }
+  validation_method         = "DNS"
 
   options {
     certificate_transparency_logging_preference = "ENABLED"
   }
+
+  lifecycle {
+    create_before_destroy = true
+  }
+}
+
+data "aws_route53_zone" "cert" {
+  zone_id      = var.zone_id
+  private_zone = false
+}
+
+resource "aws_route53_record" "cert_validation" {
+  for_each = {
+    for dvo in aws_acm_certificate.cert.domain_validation_options :
+    dvo.domain_name => {
+      name    = dvo.resource_record_name
+      type    = dvo.resource_record_type
+      record  = dvo.resource_record_value
+      zone_id = data.aws_route53_zone.cert.zone_id
+    }
+  }
+
+  name    = each.value.name
+  type    = each.value.type
+  zone_id = each.value.zone_id
+  records = [each.value.record]
+  ttl     = 300
+
+  lifecycle {
+    create_before_destroy = false
+  }
+}
+
+resource "aws_acm_certificate_validation" "cert" {
+  provider        = aws.us_east_1
+  certificate_arn = aws_acm_certificate.cert.arn
+
+  validation_record_fqdns = [
+    for rec in aws_route53_record.cert_validation : rec.fqdn
+  ]
 
   lifecycle {
     create_before_destroy = true
@@ -112,18 +154,22 @@ data "aws_iam_roles" "admin" {
   name_regex  = ".*AWSAdministratorAccess.*"
 }
 
-resource "aws_cloudfront_origin_access_identity" "website" {
-  comment = "static website ${var.domains[0]} access"
+resource "aws_cloudfront_origin_access_control" "this" {
+  name                              = "oac-static-site-${local.safe_name}"
+  description                       = "OAC for S3 bucket backing static website ${var.domains[0]}"
+  origin_access_control_origin_type = "s3"
+  signing_behavior                  = "always"
+  signing_protocol                  = "sigv4"
 }
 
 data "aws_iam_policy_document" "this" {
   statement {
-    sid    = "CloudFrontAccess"
+    sid    = "AllowCloudFrontServicePrincipalReadOnly"
     effect = "Allow"
 
     principals {
-      type        = "AWS"
-      identifiers = [aws_cloudfront_origin_access_identity.website.iam_arn]
+      type        = "Service"
+      identifiers = ["cloudfront.amazonaws.com"]
     }
 
     actions = [
@@ -135,6 +181,14 @@ data "aws_iam_policy_document" "this" {
       "${aws_s3_bucket.this.arn}",
       "${aws_s3_bucket.this.arn}/*"
     ]
+
+    condition {
+      test     = "StringEquals"
+      variable = "AWS:SourceArn"
+      values = [
+        aws_cloudfront_distribution.website.arn,
+      ]
+    }
   }
 
   statement {
@@ -220,9 +274,7 @@ resource "aws_cloudfront_distribution" "website" {
     domain_name = aws_s3_bucket.this.bucket_regional_domain_name
     origin_id   = "main"
 
-    s3_origin_config {
-      origin_access_identity = aws_cloudfront_origin_access_identity.website.cloudfront_access_identity_path
-    }
+    origin_access_control_id = aws_cloudfront_origin_access_control.this.id
   }
 
   restrictions {
@@ -262,7 +314,7 @@ resource "aws_cloudfront_response_headers_policy" "website" {
     # https://infosec.mozilla.org/guidelines/web_security#content-security-policy
     # https://infosec.mozilla.org/guidelines/web_security#x-frame-options
     content_security_policy {
-      content_security_policy = "frame-ancestors 'none'; style-src 'self' https://cdn.jsdelivr.net/ 'nonce-b77e5ce9ed'; img-src 'self'; object-src 'none'; script-src 'none'; trusted-types; require-trusted-types-for 'script';"
+      content_security_policy = "frame-ancestors 'none'; style-src 'self' 'nonce-b77e5ce9ed'; img-src 'self'; object-src 'none'; script-src 'none'; trusted-types; require-trusted-types-for 'script';"
       override                = true
     }
 
@@ -340,6 +392,30 @@ resource "aws_s3_object" "favicon_ico" {
 
   etag         = filemd5("${path.module}/favicon.ico")
   content_type = "image/x-icon"
+
+  server_side_encryption = "AES256"
+}
+
+# Upload Artichoke logo
+resource "aws_s3_object" "artichoke_logo" {
+  bucket = aws_s3_bucket.this.id
+  key    = "artichoke-logo.svg"
+  source = "${path.module}/artichoke-logo.svg"
+
+  etag         = filemd5("${path.module}/artichoke-logo.svg")
+  content_type = "image/svg+xml"
+
+  server_side_encryption = "AES256"
+}
+
+# Upload Artichoke wordmark
+resource "aws_s3_object" "artichoke_wordmark" {
+  bucket = aws_s3_bucket.this.id
+  key    = "wordmark-color.svg"
+  source = "${path.module}/wordmark-color.svg"
+
+  etag         = filemd5("${path.module}/wordmark-color.svg")
+  content_type = "image/svg+xml"
 
   server_side_encryption = "AES256"
 }
